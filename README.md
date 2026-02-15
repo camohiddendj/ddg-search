@@ -6,9 +6,10 @@ DuckDuckGo HTML search scraper with multiple output formats. Provides a CLI and 
 - Node.js 22 or newer
 
 ## Installation
-- Local dev: `npm install`
-- Global CLI (from this repo): `npm install -g .` or `npm link`
-- One-off run without install: `npx ./bin/ddg-search.js --help`
+- Global CLI (npm): `npm install -g ddg-search`
+- One-off run (npx): `npx ddg-search --help`
+- Project dependency: `npm install ddg-search`
+- Local dev from this repo: `pnpm install` then `pnpm link --global` or `pnpm install -g .` (enable via `corepack enable` if needed)
 
 ## CLI usage
 ```
@@ -45,7 +46,7 @@ Results are written to stdout; progress is written to stderr.
 
 ## Programmatic usage
 ```js
-import { search, formatJson } from 'ddg-search-cli';
+import { search, formatJson } from 'ddg-search';
 
 const { results, spelling, zeroClick } = await search('rust programming', {
   maxPages: 2,
@@ -64,7 +65,14 @@ Exports also include `fetchPage`, `parsePage`, and formatters like `formatCsv`, 
 - Respect site terms of use and rate-limit your requests; `search()` inserts random delays between pages by default.
 
 ## Development
-- Run tests: `npm test`
-- Coverage: `npm run coverage`
-- Lint: `npm run lint`
-- Format check: `npm run format`; auto-fix: `npm run format:write`
+- Run tests: `pnpm test`
+- Coverage: `pnpm run coverage`
+- Lint: `pnpm run lint`
+- Format check: `pnpm run format`; auto-fix: `pnpm run format:write`
+
+## Links
+- npm: https://www.npmjs.com/package/ddg-search
+- GitHub: https://github.com/camohiddendj/ddg-search
+
+## Contributing
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on issues and pull requests.

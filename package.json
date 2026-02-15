@@ -3,6 +3,14 @@
   "version": "2026.2.15",
   "description": "DuckDuckGo HTML search scraper with multiple output formats",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/camohiddendj/ddg-search.git"
+  },
+  "bugs": {
+    "url": "https://github.com/camohiddendj/ddg-search/issues"
+  },
+  "homepage": "https://github.com/camohiddendj/ddg-search#readme",
   "type": "module",
   "main": "src/index.js",
   "files": [
@@ -39,5 +47,6 @@
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.3.3"
-  }
+  },
+  "packageManager": "pnpm@10.29.3+sha512.498e1fb4cca5aa06c1dcf2611e6fafc50972ffe7189998c409e90de74566444298ffe43e6cd2acdc775ba1aa7cc5e092a8b7054c811ba8c5770f84693d33d2dc"
 }
