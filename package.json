@@ -1,0 +1,43 @@
+{
+  "name": "ddg-search-cli",
+  "version": "2026.02.15-1",
+  "description": "DuckDuckGo HTML search scraper with multiple output formats",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.js",
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "ddg-search": "./bin/ddg-search.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "coverage": "c8 node --test",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:write": "prettier --write ."
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "duckduckgo",
+    "search",
+    "cli",
+    "scraper",
+    "opensearch"
+  ],
+  "dependencies": {
+    "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "c8": "^9.1.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3"
+  }
+}
