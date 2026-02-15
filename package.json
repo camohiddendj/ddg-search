@@ -1,6 +1,6 @@
 {
-  "name": "ddg-search-cli",
-  "version": "2026.2.15-1",
+  "name": "ddg-search",
+  "version": "2026.2.15",
   "description": "DuckDuckGo HTML search scraper with multiple output formats",
   "license": "MIT",
   "type": "module",
