@@ -723,6 +723,102 @@ test('randomDelay resolves using timers', async () => {
   }
 });
 
+test('fetchPage passes signal to fetch', async () => {
+  const controller = new AbortController();
+  let capturedOpts;
+  const fetchImpl = async (url, opts) => {
+    capturedOpts = opts;
+    return { ok: true, status: 200, statusText: 'OK', text: async () => 'html' };
+  };
+  await fetchPage('https://example.com', null, fetchImpl, controller.signal);
+  assert.equal(capturedOpts.signal, controller.signal);
+});
+
+test('fetchPage omits signal when not provided', async () => {
+  let capturedOpts;
+  const fetchImpl = async (url, opts) => {
+    capturedOpts = opts;
+    return { ok: true, status: 200, statusText: 'OK', text: async () => 'html' };
+  };
+  await fetchPage('https://example.com', null, fetchImpl);
+  assert.equal(capturedOpts.signal, undefined);
+});
+
+test('search passes signal through to fetchPage', async () => {
+  const controller = new AbortController();
+  const capturedSignals = [];
+  const html = `
+    <div class="result web-result">
+      <a class="result__a" href="https://example.com/1">Title 1</a>
+      <div class="result__snippet">Snippet 1</div>
+      <span class="result__url">example.com/1</span>
+    </div>
+  `;
+  const fetchImpl = async (url, opts) => {
+    capturedSignals.push(opts.signal);
+    return { ok: true, status: 200, statusText: 'OK', text: async () => html };
+  };
+
+  await search('demo', {
+    maxPages: 1,
+    region: '',
+    time: '',
+    signal: controller.signal,
+    fetchImpl,
+    delay: () => Promise.resolve(),
+    stderr: { isTTY: false, write() {} },
+  });
+
+  assert.equal(capturedSignals[0], controller.signal);
+});
+
+test('search aborts when signal is triggered', async () => {
+  const controller = new AbortController();
+  let fetchCount = 0;
+  const fetchImpl = async (url, opts) => {
+    fetchCount++;
+    if (opts.signal && opts.signal.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }
+    if (fetchCount === 1) {
+      // Abort after first fetch completes
+      controller.abort();
+    }
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      text: async () => `
+        <div class="result web-result">
+          <a class="result__a" href="https://example.com/${fetchCount}">Title ${fetchCount}</a>
+          <div class="result__snippet">Snippet</div>
+          <span class="result__url">example.com</span>
+        </div>
+        <div class="nav-link">
+          <form>
+            <input type="hidden" name="s" value="10" />
+            <input type="submit" value="Next" />
+          </form>
+        </div>
+      `,
+    };
+  };
+
+  await assert.rejects(
+    () =>
+      search('demo', {
+        maxPages: 5,
+        region: '',
+        time: '',
+        signal: controller.signal,
+        fetchImpl,
+        delay: () => Promise.resolve(),
+        stderr: { isTTY: false, write() {} },
+      }),
+    /aborted/i,
+  );
+});
+
 test('fetchPage throws on HTTP errors', async () => {
   const fetchImpl = async () => ({
     ok: false,

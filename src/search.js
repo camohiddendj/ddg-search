@@ -1,7 +1,7 @@
 import { BASE_URL, USER_AGENT } from './constants.js';
 import { isBotDetection, parsePage } from './parser.js';
 
-export async function fetchPage(url, postData, fetchImpl = fetch) {
+export async function fetchPage(url, postData, fetchImpl = fetch, signal) {
   const opts = {
     headers: { 'User-Agent': USER_AGENT },
   };
@@ -10,6 +10,10 @@ export async function fetchPage(url, postData, fetchImpl = fetch) {
     opts.method = 'POST';
     opts.headers['Content-Type'] = 'application/x-www-form-urlencoded';
     opts.body = new URLSearchParams(postData).toString();
+  }
+
+  if (signal) {
+    opts.signal = signal;
   }
 
   const resp = await fetchImpl(url, opts);
@@ -31,6 +35,7 @@ export async function search(
     maxResults,
     region,
     time,
+    signal,
     fetchImpl = fetch,
     delay = randomDelay,
     stderr = process.stderr,
@@ -47,7 +52,7 @@ export async function search(
   if (region) params.set('kl', region);
   if (time) params.set('df', time);
 
-  const firstHtml = await fetchPage(`${BASE_URL}?${params}`, null, fetchImpl);
+  const firstHtml = await fetchPage(`${BASE_URL}?${params}`, null, fetchImpl, signal);
 
   if (isBotDetection(firstHtml)) {
     throw new Error('Anti-bot detection triggered on first request. Try again later.');
@@ -71,7 +76,7 @@ export async function search(
   ) {
     await delay();
 
-    const html = await fetchPage(BASE_URL, parsed.nextPageData, fetchImpl);
+    const html = await fetchPage(BASE_URL, parsed.nextPageData, fetchImpl, signal);
 
     if (isBotDetection(html)) {
       if (showProgress) {
