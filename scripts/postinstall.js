@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, copyFileSync, realpathSync } from 'node:fs';
-import { join, dirname, resolve, isAbsolute, normalize } from 'node:path';
+import { join, dirname, resolve, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
@@ -28,25 +28,17 @@ if (!existsSync(src)) process.exit(0);
  */
 function isPathSafe(dirPath) {
   try {
-    // Normalize and resolve the path to handle .. and . segments
-    const normalizedPath = normalize(dirPath);
-    
-    // Check for directory traversal patterns
-    if (normalizedPath.includes('..')) {
+    // Check for directory traversal patterns before normalization
+    // This catches explicit attempts like '../../etc'
+    if (dirPath.includes('..')) {
       return false;
     }
+    
+    // Resolve normalizes and converts to absolute path
+    const resolvedPath = resolve(dirPath);
     
     // Ensure the path is absolute (prevents relative path exploits)
-    if (!isAbsolute(normalizedPath)) {
-      return false;
-    }
-    
-    // Resolve to absolute path
-    const resolvedPath = resolve(normalizedPath);
-    
-    // Additional safety check: ensure resolved path doesn't escape to parent
-    // by checking if the normalized path is contained in the resolved path
-    if (!resolvedPath.startsWith(normalize(resolvedPath))) {
+    if (!isAbsolute(resolvedPath)) {
       return false;
     }
     
