@@ -65,6 +65,25 @@ test('parseCliArgs treats zero pages as infinite', () => {
   assert.equal(args.maxPages, Infinity);
 });
 
+test('parseCliArgs parses --max-results', () => {
+  const args = parseCliArgs(['-n', '5', 'hello']);
+  assert.equal(args.maxResults, 5);
+});
+
+test('parseCliArgs leaves maxResults undefined when not provided', () => {
+  const args = parseCliArgs(['hello']);
+  assert.equal(args.maxResults, undefined);
+});
+
+test('parseCliArgs rejects invalid --max-results', () => {
+  const exitFn = (code) => {
+    throw new Error(`exit ${code}`);
+  };
+  assert.throws(() => parseCliArgs(['-n', '0', 'hi'], exitFn), /exit 1/);
+  assert.throws(() => parseCliArgs(['-n', '-3', 'hi'], exitFn), /exit 1/);
+  assert.throws(() => parseCliArgs(['-n', 'abc', 'hi'], exitFn), /exit 1/);
+});
+
 test('parseCliArgs rejects bad inputs', () => {
   const exitFn = (code) => {
     throw new Error(`exit ${code}`);
@@ -368,6 +387,91 @@ test('search paginates, aggregates, and stops on no-more-results', async () => {
   assert.equal(data.results[1].title, 'Title 2');
 });
 
+test('search respects maxResults and stops pagination early', async () => {
+  const htmlPage = `
+    <div class="result web-result">
+      <a class="result__a" href="https://example.com/1">Title 1</a>
+      <div class="result__snippet">Snippet 1</div>
+      <span class="result__url">example.com/1</span>
+    </div>
+    <div class="result web-result">
+      <a class="result__a" href="https://example.com/2">Title 2</a>
+      <div class="result__snippet">Snippet 2</div>
+      <span class="result__url">example.com/2</span>
+    </div>
+    <div class="result web-result">
+      <a class="result__a" href="https://example.com/3">Title 3</a>
+      <div class="result__snippet">Snippet 3</div>
+      <span class="result__url">example.com/3</span>
+    </div>
+    <div class="nav-link">
+      <form>
+        <input type="hidden" name="s" value="10" />
+        <input type="submit" value="Next" />
+      </form>
+    </div>
+  `;
+
+  let fetchCount = 0;
+  const fetchImpl = async () => {
+    fetchCount++;
+    return { ok: true, status: 200, statusText: 'OK', text: async () => htmlPage };
+  };
+
+  const data = await search('demo', {
+    maxPages: 5,
+    maxResults: 2,
+    region: '',
+    time: '',
+    fetchImpl,
+    delay: () => Promise.resolve(),
+    stderr: { isTTY: false, write() {} },
+  });
+
+  assert.equal(data.results.length, 2);
+  assert.equal(fetchCount, 1, 'should not fetch page 2 since maxResults already met');
+});
+
+test('search slices results to maxResults when page returns more', async () => {
+  const html = `
+    <div class="result web-result">
+      <a class="result__a" href="https://example.com/1">Title 1</a>
+      <div class="result__snippet">Snippet 1</div>
+      <span class="result__url">example.com/1</span>
+    </div>
+    <div class="result web-result">
+      <a class="result__a" href="https://example.com/2">Title 2</a>
+      <div class="result__snippet">Snippet 2</div>
+      <span class="result__url">example.com/2</span>
+    </div>
+    <div class="result web-result">
+      <a class="result__a" href="https://example.com/3">Title 3</a>
+      <div class="result__snippet">Snippet 3</div>
+      <span class="result__url">example.com/3</span>
+    </div>
+  `;
+
+  const fetchImpl = async () => ({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    text: async () => html,
+  });
+
+  const data = await search('demo', {
+    maxPages: 1,
+    maxResults: 1,
+    region: '',
+    time: '',
+    fetchImpl,
+    delay: () => Promise.resolve(),
+    stderr: { isTTY: false, write() {} },
+  });
+
+  assert.equal(data.results.length, 1);
+  assert.equal(data.results[0].title, 'Title 1');
+});
+
 test('search rejects on bot detection', async () => {
   const fetchImpl = async () => ({
     ok: true,
@@ -552,6 +656,29 @@ test('main renders each format path', async () => {
     });
     assert.equal(stdout.buffer.length > 0, true);
   }
+});
+
+test('main passes maxResults to search', async () => {
+  let capturedOpts;
+  const searchImpl = async (query, opts) => {
+    capturedOpts = opts;
+    return {
+      query,
+      pagesScraped: 1,
+      results: [
+        { title: 'A', url: 'https://a.test', description: 'Alpha', displayUrl: 'a.test' },
+      ],
+    };
+  };
+  const stdout = { buffer: '', write(chunk) { this.buffer += chunk; } };
+
+  await main(['-n', '3', 'demo'], {
+    searchImpl,
+    stdout,
+    exit: (code) => { throw new Error(`exit ${code}`); },
+  });
+
+  assert.equal(capturedOpts.maxResults, 3);
 });
 
 test('main exits when search fails', async () => {

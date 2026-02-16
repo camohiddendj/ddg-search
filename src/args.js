@@ -12,6 +12,7 @@ export function parseCliArgs(argv = process.argv.slice(2), exitFn = process.exit
       options: {
         format: { type: 'string', short: 'f', default: 'json' },
         pages: { type: 'string', short: 'p' },
+        'max-results': { type: 'string', short: 'n' },
         region: { type: 'string', short: 'r' },
         time: { type: 'string', short: 't' },
         help: { type: 'boolean', short: 'h', default: false },
@@ -20,7 +21,7 @@ export function parseCliArgs(argv = process.argv.slice(2), exitFn = process.exit
   } catch (e) {
     console.error(`Error: ${e.message}`);
     exitFn(1);
-    return { query: '', maxPages: 0, format: 'json', region: '', time: '' };
+    return { query: '', maxPages: 0, maxResults: undefined, format: 'json', region: '', time: '' };
   }
 
   const { values, positionals } = parsed;
@@ -36,6 +37,10 @@ export function parseCliArgs(argv = process.argv.slice(2), exitFn = process.exit
   const region = values.region || '';
   const time = values.time || '';
 
+  const rawMaxResults = values['max-results'];
+  const parsedMaxResults = rawMaxResults != null ? parseInt(rawMaxResults, 10) : undefined;
+  const maxResults = parsedMaxResults;
+
   if (!SUPPORTED_FORMATS.includes(format)) {
     console.error(`Unknown format: ${format}. Supported: ${SUPPORTED_FORMATS.join(', ')}`);
     exitFn(1);
@@ -46,12 +51,17 @@ export function parseCliArgs(argv = process.argv.slice(2), exitFn = process.exit
     exitFn(1);
   }
 
+  if (parsedMaxResults != null && (Number.isNaN(parsedMaxResults) || parsedMaxResults < 1)) {
+    console.error('--max-results must be a positive integer');
+    exitFn(1);
+  }
+
   if (time && !['d', 'w', 'm', 'y'].includes(time)) {
     console.error('Unknown time range: d, w, m, y');
     exitFn(1);
   }
 
-  return { query, maxPages, format, region, time };
+  return { query, maxPages, maxResults, format, region, time };
 }
 
 export { usage };
