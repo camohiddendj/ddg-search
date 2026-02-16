@@ -34,8 +34,14 @@ for (const dir of candidates) {
   const skillsDir = join(dir, 'skills');
   if (!existsSync(skillsDir)) continue;
 
-  const dest = join(skillsDir, 'ddg-search');
-  mkdirSync(dest, { recursive: true });
-  copyFileSync(src, join(dest, 'SKILL.md'));
-  break;
+  try {
+    const dest = join(skillsDir, 'ddg-search');
+    mkdirSync(dest, { recursive: true });
+    copyFileSync(src, join(dest, 'SKILL.md'));
+    break;
+  } catch (err) {
+    // Silently ignore errors since this is an optional enhancement
+    // and shouldn't block package installation
+    continue;
+  }
 }
