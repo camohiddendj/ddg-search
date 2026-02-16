@@ -6,3 +6,9 @@ tmp/
 *.log
 .npmrc
 .env
+.vscode/
+.idea/
+.claude/
+CLAUDE.md
+.codex/
+.cursor/
