@@ -49,7 +49,7 @@ export interface CliArgs {
   query: string;
   maxPages: number;
   maxResults: number | undefined;
-  format: string;
+  format: OutputFormat;
   region: string;
   time: string;
 }

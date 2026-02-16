@@ -57,7 +57,7 @@ import { search, formatJson } from 'ddg-search';
 
 const controller = new AbortController();
 
-const { results, spelling, zeroClick } = await search('rust programming', {
+const data = await search('rust programming', {
   maxPages: 2,
   maxResults: 5, // stop early once 5 results are collected
   region: 'us-en',
@@ -65,8 +65,8 @@ const { results, spelling, zeroClick } = await search('rust programming', {
   signal: controller.signal, // optional: cancel with controller.abort()
 });
 
-// Convert to OpenSearch-style JSON
-const output = formatJson({ results, spelling, zeroClick });
+// Convert to OpenSearch-style JSON using the full response
+const output = formatJson(data);
 console.log(output);
 ```
 

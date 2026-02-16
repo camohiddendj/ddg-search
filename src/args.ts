@@ -46,7 +46,7 @@ export function parseCliArgs(
   const query = positionals.join(' ');
   const parsedPages = values.pages != null ? parseInt(values.pages, 10) : 5;
   const maxPages = parsedPages === 0 ? Infinity : parsedPages;
-  const format = values.format;
+  const format = values.format as OutputFormat;
   const region = values.region ?? '';
   const time = values.time ?? '';
 
@@ -54,7 +54,7 @@ export function parseCliArgs(
   const parsedMaxResults = rawMaxResults != null ? parseInt(rawMaxResults, 10) : undefined;
   const maxResults = parsedMaxResults;
 
-  if (!SUPPORTED_FORMATS.includes(format as OutputFormat)) {
+  if (!SUPPORTED_FORMATS.includes(format)) {
     console.error(`Unknown format: ${format}. Supported: ${SUPPORTED_FORMATS.join(', ')}`);
     exitFn(1);
   }
