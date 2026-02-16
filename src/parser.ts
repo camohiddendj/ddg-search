@@ -1,13 +1,14 @@
 import * as cheerio from 'cheerio';
+import type { ParsedPage, SearchResult, SpellingCorrection, ZeroClick } from '@/types.js';
 
-export function isBotDetection(html) {
+export function isBotDetection(html: string): boolean {
   return html.includes('anomaly-modal') || html.includes('challenge-form');
 }
 
-export function parsePage(html) {
+export function parsePage(html: string): ParsedPage {
   const $ = cheerio.load(html);
 
-  let spelling = null;
+  let spelling: SpellingCorrection | null = null;
   const didYouMean = $('#did_you_mean');
   if (didYouMean.length) {
     const links = didYouMean.find('a');
@@ -21,7 +22,7 @@ export function parsePage(html) {
     }
   }
 
-  let zeroClick = null;
+  let zeroClick: ZeroClick | null = null;
   const zciEl = $('.zci-wrapper .zci');
   if (zciEl.length) {
     const headingAnchor = zciEl.find('.zci__heading a');
@@ -30,7 +31,7 @@ export function parsePage(html) {
     const sourceLink = abstractEl.find('a q');
 
     const heading = headingAnchor.text().trim();
-    const url = headingAnchor.attr('href') || '';
+    const url = headingAnchor.attr('href') ?? '';
 
     const abstractClone = abstractEl.clone();
     abstractClone.find('a').remove();
@@ -45,7 +46,7 @@ export function parsePage(html) {
     }
   }
 
-  const results = [];
+  const results: SearchResult[] = [];
   $('.result.web-result')
     .not('.result--ad')
     .not('.result--no-result')
@@ -56,7 +57,7 @@ export function parsePage(html) {
       const urlEl = $el.find('.result__url');
 
       const title = titleEl.text().trim();
-      const url = titleEl.attr('href') || '';
+      const url = titleEl.attr('href') ?? '';
       const description = snippetEl.text().trim();
       const displayUrl = urlEl.text().trim();
 
@@ -67,19 +68,20 @@ export function parsePage(html) {
 
   const noMoreResults = $('.result--no-result').length > 0;
 
-  let nextPageData = null;
+  let nextPageData: Record<string, string> | null = null;
   $('.nav-link').each((_i, el) => {
     const $form = $(el).find('form');
     const submitBtn = $form.find('input[type="submit"]');
     if (submitBtn.val() === 'Next') {
-      nextPageData = {};
+      const data: Record<string, string> = {};
       $form.find('input[type="hidden"]').each((_j, input) => {
         const $input = $(input);
         const name = $input.attr('name');
         if (name) {
-          nextPageData[name] = $input.attr('value') || '';
+          data[name] = $input.attr('value') ?? '';
         }
       });
+      nextPageData = data;
     }
   });
 

@@ -12,10 +12,11 @@
   },
   "homepage": "https://github.com/camohiddendj/ddg-search#readme",
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "bin",
-    "src",
+    "dist",
     "README.md",
     "LICENSE"
   ],
@@ -23,11 +24,15 @@
     "ddg-search": "bin/ddg-search.js"
   },
   "scripts": {
-    "test": "node --test",
-    "coverage": "c8 node --test",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+    "prebuild": "rm -rf dist",
+    "test": "tsx --test test/index.test.ts",
+    "coverage": "c8 tsx --test test/index.test.ts",
     "lint": "eslint .",
     "format": "prettier --check .",
-    "format:write": "prettier --write ."
+    "format:write": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
   },
   "engines": {
     "node": ">=22"
@@ -37,16 +42,23 @@
     "search",
     "cli",
     "scraper",
-    "opensearch"
+    "opensearch",
+    "typescript"
   ],
   "dependencies": {
     "cheerio": "^1.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^25.2.3",
     "c8": "^9.1.0",
-    "eslint": "^8.57.1",
-    "eslint-config-prettier": "^9.1.0",
-    "prettier": "^3.3.3"
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.3.3",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.55.0"
   },
   "packageManager": "pnpm@10.29.3+sha512.498e1fb4cca5aa06c1dcf2611e6fafc50972ffe7189998c409e90de74566444298ffe43e6cd2acdc775ba1aa7cc5e092a8b7054c811ba8c5770f84693d33d2dc"
 }

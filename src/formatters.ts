@@ -1,13 +1,14 @@
-import { BASE_URL } from './constants.js';
+import { BASE_URL } from '@/constants.js';
+import type { SearchResponse } from '@/types.js';
 
-export function escapeCsv(str) {
+export function escapeCsv(str: string): string {
   if (str.includes('"') || str.includes(',') || str.includes('\n')) {
     return '"' + str.replace(/"/g, '""') + '"';
   }
   return str;
 }
 
-export function escapeXml(str) {
+export function escapeXml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -16,8 +17,8 @@ export function escapeXml(str) {
     .replace(/'/g, '&apos;');
 }
 
-export function formatJson(data) {
-  const output = {
+export function formatJson(data: SearchResponse): string {
+  const output: Record<string, unknown> = {
     'opensearch:totalResults': data.results.length,
     'opensearch:startIndex': 1,
     'opensearch:itemsPerPage': data.results.length,
@@ -47,8 +48,8 @@ export function formatJson(data) {
   return JSON.stringify(output, null, 2);
 }
 
-export function formatJsonl(data) {
-  const lines = [];
+export function formatJsonl(data: SearchResponse): string {
+  const lines: string[] = [];
   if (data.zeroClick) {
     lines.push(JSON.stringify({ type: 'zeroClick', ...data.zeroClick }));
   }
@@ -65,7 +66,7 @@ export function formatJsonl(data) {
   return lines.join('\n');
 }
 
-export function formatCsv(data) {
+export function formatCsv(data: SearchResponse): string {
   const lines = ['position,title,link,description'];
   for (let i = 0; i < data.results.length; i++) {
     const r = data.results[i];
@@ -74,7 +75,7 @@ export function formatCsv(data) {
   return lines.join('\n');
 }
 
-export function formatOpenSearch(data) {
+export function formatOpenSearch(data: SearchResponse): string {
   const now = new Date().toISOString();
   const searchUrl = `${BASE_URL}?q=${encodeURIComponent(data.query)}`;
 
@@ -114,8 +115,8 @@ export function formatOpenSearch(data) {
   return xml;
 }
 
-export function formatMarkdown(data) {
-  const lines = [];
+export function formatMarkdown(data: SearchResponse): string {
+  const lines: string[] = [];
   lines.push(`# Search: ${data.query}`);
   lines.push(`${data.results.length} results from ${data.pagesScraped} page(s)\n`);
 
@@ -142,8 +143,8 @@ export function formatMarkdown(data) {
   return lines.join('\n');
 }
 
-export function formatCompact(data) {
-  const lines = [];
+export function formatCompact(data: SearchResponse): string {
+  const lines: string[] = [];
   lines.push(`query: ${data.query}`);
   lines.push(`results: ${data.results.length}`);
   if (data.spelling) {

@@ -1,5 +1,9 @@
 coverage/
 tmp/
+src/
+test/
 .DS_Store
 *.log
 .vscode/
+tsconfig*.json
+eslint.config.js
