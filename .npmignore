@@ -5,5 +5,10 @@ test/
 .DS_Store
 *.log
 .vscode/
+.idea/
+.claude/
+CLAUDE.md
+.codex/
+.cursor/
 tsconfig*.json
 eslint.config.js
