@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, copyFileSync, realpathSync } from 'node:fs';
-import { join, dirname, resolve } from 'node:path';
+import { join, dirname, resolve, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
@@ -36,12 +36,10 @@ function isPathSafe(dirPath) {
     
     // Reject relative paths - environment variables should use absolute paths
     // This prevents confusion about where files will be written
-    if (!dirPath.startsWith('/')) {
+    // Uses isAbsolute for cross-platform compatibility (works on both Unix and Windows)
+    if (!isAbsolute(dirPath)) {
       return false;
     }
-    
-    // Resolve normalizes and converts to absolute path
-    resolve(dirPath);
     
     return true;
   } catch {
