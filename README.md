@@ -3,15 +3,18 @@
 DuckDuckGo HTML search scraper with multiple output formats. Provides a CLI and small library helpers to fetch result pages, handle pagination, and emit OpenSearch-style structured data.
 
 ## Requirements
+
 - Node.js 22 or newer
 
 ## Installation
+
 - Global CLI (npm): `npm install -g ddg-search`
 - One-off run (npx): `npx ddg-search --help`
 - Project dependency: `npm install ddg-search`
 - Local dev from this repo: `pnpm install` then `pnpm link --global` or `pnpm install -g .` (enable via `corepack enable` if needed)
 
 ## CLI usage
+
 ```
 Usage: ddg-search [options] <query>
 
@@ -37,6 +40,7 @@ Results are written to stdout; progress is written to stderr.
 ```
 
 ## Examples
+
 - `ddg-search "node.js tutorial"`
 - `ddg-search -f csv -p 3 "linux kernel"`
 - `ddg-search -f opensearch "rust programming" > results.xml`
@@ -47,6 +51,7 @@ Results are written to stdout; progress is written to stderr.
 - `ddg-search "rust programming" | jq '.items[].link'`
 
 ## Programmatic usage
+
 ```js
 import { search, formatJson } from 'ddg-search';
 
@@ -64,21 +69,28 @@ const { results, spelling, zeroClick } = await search('rust programming', {
 const output = formatJson({ results, spelling, zeroClick });
 console.log(output);
 ```
-Exports also include `fetchPage`, `parsePage`, and formatters like `formatCsv`, `formatJsonl`, `formatMarkdown`, `formatOpenSearch`, and `formatCompact`.
+
+Exports also include `fetchPage`, `parsePage`, and formatters like `formatCsv`, `formatJsonl`, `formatMarkdown`, `formatOpenSearch`, and `formatCompact`. Full TypeScript type definitions are included.
 
 ## Notes
+
 - DuckDuckGo may present bot-detection. The scraper stops early and returns collected results if that happens.
 - Respect site terms of use and rate-limit your requests; `search()` inserts random delays between pages by default.
 
 ## Development
+
+- Build: `pnpm run build`
 - Run tests: `pnpm test`
 - Coverage: `pnpm run coverage`
+- Type check: `pnpm run typecheck`
 - Lint: `pnpm run lint`
 - Format check: `pnpm run format`; auto-fix: `pnpm run format:write`
 
 ## Links
+
 - npm: https://www.npmjs.com/package/ddg-search
 - GitHub: https://github.com/camohiddendj/ddg-search
 
 ## Contributing
+
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on issues and pull requests.

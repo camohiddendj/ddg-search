@@ -1,14 +1,20 @@
-import { BASE_URL, USER_AGENT } from './constants.js';
-import { isBotDetection, parsePage } from './parser.js';
+import { BASE_URL, USER_AGENT } from '@/constants.js';
+import { isBotDetection, parsePage } from '@/parser.js';
+import type { SearchOptions, SearchResponse, SearchResult, Writable } from '@/types.js';
 
-export async function fetchPage(url, postData, fetchImpl = fetch, signal) {
-  const opts = {
+export async function fetchPage(
+  url: string,
+  postData: Record<string, string> | null,
+  fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
+): Promise<string> {
+  const opts: RequestInit = {
     headers: { 'User-Agent': USER_AGENT },
   };
 
   if (postData) {
     opts.method = 'POST';
-    opts.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    (opts.headers as Record<string, string>)['Content-Type'] = 'application/x-www-form-urlencoded';
     opts.body = new URLSearchParams(postData).toString();
   }
 
@@ -23,14 +29,15 @@ export async function fetchPage(url, postData, fetchImpl = fetch, signal) {
   return resp.text();
 }
 
-export function randomDelay() {
+export function randomDelay(): Promise<void> {
   const ms = 800 + Math.random() * 2100;
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function search(
-  query,
-  {
+const defaultStderr: Writable = process.stderr;
+
+export async function search(query: string, opts: SearchOptions): Promise<SearchResponse> {
+  const {
     maxPages,
     maxResults,
     region,
@@ -38,12 +45,12 @@ export async function search(
     signal,
     fetchImpl = fetch,
     delay = randomDelay,
-    stderr = process.stderr,
-  },
-) {
-  const allResults = [];
-  let spelling = null;
-  let zeroClick = null;
+    stderr = defaultStderr,
+  } = opts;
+
+  const allResults: SearchResult[] = [];
+  let spelling: SearchResponse['spelling'] = null;
+  let zeroClick: SearchResponse['zeroClick'] = null;
   let page = 0;
   const showProgress = stderr.isTTY;
   const limit = maxResults != null ? maxResults : Infinity;
