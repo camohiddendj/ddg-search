@@ -28,9 +28,10 @@ if (!existsSync(src)) process.exit(0);
  */
 function isPathSafe(dirPath) {
   try {
-    // Check for directory traversal patterns before normalization
-    // This catches explicit attempts like '../../etc'
-    if (dirPath.includes('..')) {
+    // Check for directory traversal sequences (not just .. as a substring)
+    // This catches explicit attempts like '../../etc' or '..\..\'
+    if (dirPath.includes('/../') || dirPath.includes('\\..\\') || 
+        dirPath.endsWith('/..') || dirPath.endsWith('\\..')) {
       return false;
     }
     
