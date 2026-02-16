@@ -42,7 +42,7 @@ export async function main(
         output = formatCompact(data);
         break;
       default:
-        throw new Error(`Unsupported format: ${format}`);
+        throw new Error(`Unsupported format: ${format as string}`);
     }
 
     stdout.write(output + '\n');

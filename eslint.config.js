@@ -35,6 +35,6 @@ export default [
     },
   },
   {
-    ignores: ['coverage/', 'tmp/', 'dist/', 'test/fixtures/', 'bin/'],
+    ignores: ['coverage/', 'tmp/', 'dist/', 'test/fixtures/', 'bin/', 'scripts/'],
   },
 ];
