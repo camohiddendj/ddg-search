@@ -4,10 +4,21 @@ import { join, dirname, resolve, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
+// Allow users to skip postinstall with SKIP_POSTINSTALL=1 or when installed as a dependency
+if (process.env.SKIP_POSTINSTALL === '1' || process.env.SKIP_POSTINSTALL === 'true') {
+  process.exit(0);
+}
+
+// Skip if installed as a dependency (cwd is not the package directory)
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkgDir = join(__dirname, '..');
 const home = homedir();
 const cwd = process.cwd();
+
+// If cwd is not the package directory, we're likely installed as a dependency
+if (cwd !== pkgDir) {
+  process.exit(0);
+}
 
 const src = join(pkgDir, 'SKILL.md');
 if (!existsSync(src)) process.exit(0);
