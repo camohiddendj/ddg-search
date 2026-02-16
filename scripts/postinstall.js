@@ -126,7 +126,7 @@ for (const dir of candidates) {
   // Security: Only write if the skills directory already exists
   // This prevents creating directories in arbitrary locations
   if (!existsSync(skillsDir)) continue;
-  
+
   // Security: Resolve symlinks to ensure we're writing to the real location
   // Validate that the resolved path is absolute
   try {
@@ -138,9 +138,15 @@ for (const dir of candidates) {
   } catch {
     continue;
   }
-  
-  const dest = join(skillsDir, 'ddg-search');
-  mkdirSync(dest, { recursive: true });
-  copyFileSync(src, join(dest, 'SKILL.md'));
-  break;
+
+  try {
+    const dest = join(skillsDir, 'ddg-search');
+    mkdirSync(dest, { recursive: true });
+    copyFileSync(src, join(dest, 'SKILL.md'));
+    break;
+  } catch (err) {
+    // Silently ignore errors since this is an optional enhancement
+    // and shouldn't block package installation
+    continue;
+  }
 }
