@@ -96,16 +96,15 @@ function validateEnvPath(envPath) {
 
 // Candidate state directories, checked in order. The first one whose
 // "skills" subfolder already exists wins. Env-var overrides take priority,
-// then workspace-local paths (cwd), then common home-dir locations, and
-// finally docker / non-standard locations.
+// then common home-dir locations, and finally docker / non-standard locations.
+// Note: workspace-local paths are intentionally omitted to avoid creating
+// directories in unexpected locations during package installation.
 //
 // Security note: Environment variables are validated before use to prevent
 // malicious path injection. See isPathSafe() and validateEnvPath() for details.
 const candidates = [
   validateEnvPath(process.env.OPENCLAW_STATE_DIR),
   validateEnvPath(process.env.OPENCLAW_HOME),
-  join(cwd, '.openclaw'),
-  join(cwd, 'openclaw'),
   join(home, '.openclaw'),
   join(home, 'openclaw'),
   '/home/openclaw',
