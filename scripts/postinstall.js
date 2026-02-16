@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, copyFileSync, realpathSync } from 'node:fs';
-import { join, dirname, resolve, isAbsolute } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
@@ -34,13 +34,14 @@ function isPathSafe(dirPath) {
       return false;
     }
     
-    // Resolve normalizes and converts to absolute path
-    const resolvedPath = resolve(dirPath);
-    
-    // Ensure the path is absolute (prevents relative path exploits)
-    if (!isAbsolute(resolvedPath)) {
+    // Reject relative paths - environment variables should use absolute paths
+    // This prevents confusion about where files will be written
+    if (!dirPath.startsWith('/')) {
       return false;
     }
+    
+    // Resolve normalizes and converts to absolute path
+    resolve(dirPath);
     
     return true;
   } catch {
@@ -68,7 +69,8 @@ function validateEnvPath(envPath) {
   
   // Validate the path is safe
   if (!isPathSafe(trimmed)) {
-    console.warn(`[ddg-search postinstall] Ignoring unsafe path from environment: ${trimmed}`);
+    // Security: Don't log the actual path to prevent log injection
+    console.warn('[ddg-search postinstall] Ignoring unsafe path from environment variable');
     return null;
   }
   
