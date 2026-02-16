@@ -13,7 +13,6 @@ if (process.env.SKIP_POSTINSTALL === '1' || process.env.SKIP_POSTINSTALL === 'tr
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkgDir = join(__dirname, '..');
 const home = homedir();
-const cwd = process.cwd();
 
 // If cwd is not the package directory, we're likely installed as a dependency
 if (cwd !== pkgDir) {
@@ -25,13 +24,12 @@ if (!existsSync(src)) process.exit(0);
 
 // Candidate state directories, checked in order. The first one whose
 // "skills" subfolder already exists wins. Env-var overrides take priority,
-// then workspace-local paths (cwd), then common home-dir locations, and
-// finally docker / non-standard locations.
+// then common home-dir locations, and finally docker / non-standard locations.
+// Note: workspace-local paths are intentionally omitted to avoid creating
+// directories in unexpected locations during package installation.
 const candidates = [
   process.env.OPENCLAW_STATE_DIR,
   process.env.OPENCLAW_HOME,
-  join(cwd, '.openclaw'),
-  join(cwd, 'openclaw'),
   join(home, '.openclaw'),
   join(home, 'openclaw'),
   '/home/openclaw',
