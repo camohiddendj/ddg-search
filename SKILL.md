@@ -4,18 +4,18 @@ description: DuckDuckGo HTML search scraper CLI with JSON, CSV, OpenSearch, mark
 homepage: https://github.com/camohiddendj/ddg-search
 metadata:
   {
-    "openclaw":
+    'openclaw':
       {
-        "emoji": "🦆",
-        "requires": { "bins": ["ddg-search"] },
-        "install":
+        'emoji': '🦆',
+        'requires': { 'bins': ['ddg-search'] },
+        'install':
           [
             {
-              "id": "node",
-              "kind": "node",
-              "package": "ddg-search",
-              "bins": ["ddg-search"],
-              "label": "Install ddg-search CLI (npm)",
+              'id': 'node',
+              'kind': 'node',
+              'package': 'ddg-search',
+              'bins': ['ddg-search'],
+              'label': 'Install ddg-search CLI (npm)',
             },
           ],
       },
@@ -40,13 +40,13 @@ ddg-search -p 0 "query"                     # unlimited pages (scrape all)
 
 ## Options
 
-| Flag | Long | Description | Default |
-|------|------|-------------|---------|
-| `-f` | `--format` | Output format: `json`, `jsonl`, `csv`, `opensearch`, `markdown`, `compact` | `json` |
-| `-p` | `--pages` | Max pages to scrape (0 = unlimited) | `5` |
-| `-n` | `--max-results` | Stop after this many results | all |
-| `-r` | `--region` | Region code (e.g. `us-en`, `uk-en`) | all regions |
-| `-t` | `--time` | Time filter: `d` (day), `w` (week), `m` (month), `y` (year) | none |
+| Flag | Long            | Description                                                                | Default     |
+| ---- | --------------- | -------------------------------------------------------------------------- | ----------- |
+| `-f` | `--format`      | Output format: `json`, `jsonl`, `csv`, `opensearch`, `markdown`, `compact` | `json`      |
+| `-p` | `--pages`       | Max pages to scrape (0 = unlimited)                                        | `5`         |
+| `-n` | `--max-results` | Stop after this many results                                               | all         |
+| `-r` | `--region`      | Region code (e.g. `us-en`, `uk-en`)                                        | all regions |
+| `-t` | `--time`        | Time filter: `d` (day), `w` (week), `m` (month), `y` (year)                | none        |
 
 ## Choosing a format
 

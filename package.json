@@ -1,6 +1,6 @@
 {
   "name": "ddg-search",
-  "version": "2026.2.15-2",
+  "version": "2026.2.16",
   "description": "DuckDuckGo HTML search scraper with multiple output formats",
   "license": "MIT",
   "repository": {
@@ -17,8 +17,10 @@
   "files": [
     "bin",
     "dist",
+    "scripts",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "SKILL.md"
   ],
   "bin": {
     "ddg-search": "bin/ddg-search.js"
@@ -32,6 +34,7 @@
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "typecheck": "tsc --noEmit",
+    "postinstall": "node scripts/postinstall.js",
     "prepublishOnly": "pnpm run build"
   },
   "engines": {
