@@ -40,8 +40,11 @@ for (const dir of candidates) {
     copyFileSync(src, join(dest, 'SKILL.md'));
     break;
   } catch (err) {
-    // Silently ignore errors since this is an optional enhancement
+    // Log warning but continue since this is an optional enhancement
     // and shouldn't block package installation
+    if (process.env.DEBUG) {
+      console.warn(`[ddg-search] Failed to install SKILL.md to ${dir}:`, err);
+    }
     continue;
   }
 }
