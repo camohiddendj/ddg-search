@@ -21,13 +21,16 @@ import {
   search,
   usage,
 } from '../src/index.js';
+import type { SearchOptions, SearchResponse, Writable } from '../src/index.js';
 
-const readFixture = (name) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
+const readFixture = (name: string): string =>
+  readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
 
-const sampleData = {
+const sampleData: SearchResponse = {
   query: 'example query',
   pagesScraped: 2,
   spelling: { corrected: 'exam ple', original: 'example' },
+  zeroClick: null,
   results: [
     {
       title: 'Result One',
@@ -44,8 +47,28 @@ const sampleData = {
   ],
 };
 
+function mockFetch(textFn: () => Promise<string> | string): typeof fetch {
+  return (async (_url: string | URL | Request, _init?: RequestInit) => ({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    text: async () => textFn(),
+  })) as unknown as typeof fetch;
+}
+
+function mockStderr(isTTY = false): Writable & { buffer: string } {
+  return {
+    buffer: '',
+    isTTY,
+    write(chunk: string) {
+      this.buffer += chunk;
+      return true;
+    },
+  };
+}
+
 test('usage exits with code 1', () => {
-  const exitFn = (code) => {
+  const exitFn = (code: number): void => {
     throw new Error(`exit ${code}`);
   };
   assert.throws(() => usage(exitFn), /exit 1/);
@@ -76,7 +99,7 @@ test('parseCliArgs leaves maxResults undefined when not provided', () => {
 });
 
 test('parseCliArgs rejects invalid --max-results', () => {
-  const exitFn = (code) => {
+  const exitFn = (code: number): void => {
     throw new Error(`exit ${code}`);
   };
   assert.throws(() => parseCliArgs(['-n', '0', 'hi'], exitFn), /exit 1/);
@@ -85,7 +108,7 @@ test('parseCliArgs rejects invalid --max-results', () => {
 });
 
 test('parseCliArgs rejects bad inputs', () => {
-  const exitFn = (code) => {
+  const exitFn = (code: number): void => {
     throw new Error(`exit ${code}`);
   };
 
@@ -185,7 +208,7 @@ test('parsePage reads real first page fixture with pagination', () => {
 
   assert.equal(parsed.spelling, null);
   assert.equal(parsed.noMoreResults, false);
-  assert.equal(parsed.nextPageData.s, '10');
+  assert.equal(parsed.nextPageData?.s, '10');
   assert.equal(parsed.results.length >= 10, true);
   assert.equal(
     parsed.results[0].title.includes('DuckDuckGo - Protection. Privacy. Peace of mind.'),
@@ -227,14 +250,14 @@ test('parsePage extracts zero click result from fixture', () => {
   const parsed = parsePage(html);
 
   assert.notEqual(parsed.zeroClick, null);
-  assert.equal(parsed.zeroClick.heading, 'Microsoft');
-  assert.equal(parsed.zeroClick.url, 'https://en.wikipedia.org/wiki/Microsoft');
+  assert.equal(parsed.zeroClick!.heading, 'Microsoft');
+  assert.equal(parsed.zeroClick!.url, 'https://en.wikipedia.org/wiki/Microsoft');
   assert.equal(
-    parsed.zeroClick.abstract.includes('American multinational technology conglomerate'),
+    parsed.zeroClick!.abstract.includes('American multinational technology conglomerate'),
     true,
   );
-  assert.equal(parsed.zeroClick.image, 'https://i.duckduckgo.com/i/e8be2f834e440d99.png');
-  assert.equal(parsed.zeroClick.source, 'Wikipedia');
+  assert.equal(parsed.zeroClick!.image, 'https://i.duckduckgo.com/i/e8be2f834e440d99.png');
+  assert.equal(parsed.zeroClick!.source, 'Wikipedia');
 });
 
 test('parsePage returns null zeroClick when absent', () => {
@@ -246,13 +269,13 @@ test('parsePage returns null zeroClick when absent', () => {
 
 test('formatters produce expected structures', () => {
   const json = formatJson(sampleData);
-  const parsedJson = JSON.parse(json);
+  const parsedJson = JSON.parse(json) as Record<string, unknown>;
   assert.equal(parsedJson['opensearch:totalResults'], 2);
-  assert.equal(parsedJson.items[0].position, 1);
+  assert.equal((parsedJson.items as Array<{ position: number }>)[0].position, 1);
 
   const jsonl = formatJsonl(sampleData).split('\n');
   assert.equal(jsonl.length, 2);
-  const firstItem = JSON.parse(jsonl[0]);
+  const firstItem = JSON.parse(jsonl[0]) as { title: string };
   assert.equal(firstItem.title, 'Result One');
 
   const csv = formatCsv(sampleData);
@@ -267,7 +290,7 @@ test('formatters produce expected structures', () => {
 });
 
 test('formatters include zeroClick when present', () => {
-  const dataWithZc = {
+  const dataWithZc: SearchResponse = {
     ...sampleData,
     zeroClick: {
       heading: 'Test Topic',
@@ -279,13 +302,13 @@ test('formatters include zeroClick when present', () => {
   };
 
   const json = formatJson(dataWithZc);
-  const parsedJson = JSON.parse(json);
+  const parsedJson = JSON.parse(json) as { zeroClick: { heading: string; source: string } };
   assert.equal(parsedJson.zeroClick.heading, 'Test Topic');
   assert.equal(parsedJson.zeroClick.source, 'Wikipedia');
 
   const jsonl = formatJsonl(dataWithZc).split('\n');
   assert.equal(jsonl.length, 3);
-  const zcLine = JSON.parse(jsonl[0]);
+  const zcLine = JSON.parse(jsonl[0]) as { type: string; heading: string };
   assert.equal(zcLine.type, 'zeroClick');
   assert.equal(zcLine.heading, 'Test Topic');
 
@@ -312,9 +335,11 @@ test('escaping helpers handle quotes and XML chars', () => {
 });
 
 test('formatOpenSearch escapes XML and includes entries', () => {
-  const data = {
+  const data: SearchResponse = {
     query: 'x & y',
     pagesScraped: 1,
+    spelling: null,
+    zeroClick: null,
     results: [
       {
         title: '<T>',
@@ -355,16 +380,12 @@ test('search paginates, aggregates, and stops on no-more-results', async () => {
   `;
 
   const pages = [htmlFirst, htmlSecond];
-  const fetchImpl = async (url, opts) => {
-    return {
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      text: async () => pages.shift(),
-      url,
-      opts,
-    };
-  };
+  const fetchImpl = (async () => ({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    text: async () => pages.shift()!,
+  })) as unknown as typeof fetch;
 
   const data = await search('demo', {
     maxPages: 5,
@@ -372,13 +393,7 @@ test('search paginates, aggregates, and stops on no-more-results', async () => {
     time: '',
     fetchImpl,
     delay: () => Promise.resolve(),
-    stderr: {
-      buffer: '',
-      isTTY: true,
-      write(chunk) {
-        this.buffer += chunk;
-      },
-    },
+    stderr: mockStderr(true),
   });
 
   assert.equal(data.pagesScraped, 2);
@@ -413,10 +428,10 @@ test('search respects maxResults and stops pagination early', async () => {
   `;
 
   let fetchCount = 0;
-  const fetchImpl = async () => {
+  const fetchImpl = (async () => {
     fetchCount++;
     return { ok: true, status: 200, statusText: 'OK', text: async () => htmlPage };
-  };
+  }) as unknown as typeof fetch;
 
   const data = await search('demo', {
     maxPages: 5,
@@ -425,7 +440,7 @@ test('search respects maxResults and stops pagination early', async () => {
     time: '',
     fetchImpl,
     delay: () => Promise.resolve(),
-    stderr: { isTTY: false, write() {} },
+    stderr: mockStderr(),
   });
 
   assert.equal(data.results.length, 2);
@@ -451,12 +466,7 @@ test('search slices results to maxResults when page returns more', async () => {
     </div>
   `;
 
-  const fetchImpl = async () => ({
-    ok: true,
-    status: 200,
-    statusText: 'OK',
-    text: async () => html,
-  });
+  const fetchImpl = mockFetch(() => html);
 
   const data = await search('demo', {
     maxPages: 1,
@@ -465,7 +475,7 @@ test('search slices results to maxResults when page returns more', async () => {
     time: '',
     fetchImpl,
     delay: () => Promise.resolve(),
-    stderr: { isTTY: false, write() {} },
+    stderr: mockStderr(),
   });
 
   assert.equal(data.results.length, 1);
@@ -473,12 +483,7 @@ test('search slices results to maxResults when page returns more', async () => {
 });
 
 test('search rejects on bot detection', async () => {
-  const fetchImpl = async () => ({
-    ok: true,
-    status: 200,
-    statusText: 'OK',
-    text: async () => '<div class="anomaly-modal">block</div>',
-  });
+  const fetchImpl = mockFetch(() => '<div class="anomaly-modal">block</div>');
 
   await assert.rejects(
     () =>
@@ -488,7 +493,7 @@ test('search rejects on bot detection', async () => {
         time: '',
         fetchImpl,
         delay: () => Promise.resolve(),
-        stderr: { isTTY: false, write() {} },
+        stderr: mockStderr(),
       }),
     /Anti-bot detection triggered/,
   );
@@ -512,20 +517,14 @@ test('search shows progress and stops after anti-bot mid-run', async () => {
   const htmlSecond = '<div class="challenge-form">blocked</div>';
 
   const pages = [htmlFirst, htmlSecond];
-  const fetchImpl = async () => ({
+  const fetchImpl = (async () => ({
     ok: true,
     status: 200,
     statusText: 'OK',
-    text: async () => pages.shift(),
-  });
+    text: async () => pages.shift()!,
+  })) as unknown as typeof fetch;
 
-  const stderr = {
-    buffer: '',
-    isTTY: true,
-    write(chunk) {
-      this.buffer += chunk;
-    },
-  };
+  const stderr = mockStderr(true);
 
   const data = await search('demo', {
     maxPages: 5,
@@ -550,11 +549,11 @@ test('search applies region and time parameters', async () => {
     </div>
   `;
 
-  const calls = [];
-  const fetchImpl = async (url) => {
-    calls.push(url);
+  const calls: string[] = [];
+  const fetchImpl = (async (url: string | URL | Request) => {
+    calls.push(String(url));
     return { ok: true, status: 200, statusText: 'OK', text: async () => html };
-  };
+  }) as unknown as typeof fetch;
 
   await search('demo', {
     maxPages: 1,
@@ -562,7 +561,7 @@ test('search applies region and time parameters', async () => {
     time: 'w',
     fetchImpl,
     delay: () => Promise.resolve(),
-    stderr: { isTTY: false, write() {} },
+    stderr: mockStderr(),
   });
 
   const firstCall = calls[0];
@@ -573,13 +572,13 @@ test('search applies region and time parameters', async () => {
 test('search walks fixtures across pagination', async () => {
   const firstHtml = readFixture('qDuckDuckGo.s0.html');
   const secondHtml = readFixture('qDuckDuckGo.s265.html');
-  const calls = [];
+  const calls: Array<{ url: string; opts: RequestInit }> = [];
 
-  const fetchImpl = async (url, opts = {}) => {
-    calls.push({ url, opts });
+  const fetchImpl = (async (url: string | URL | Request, opts: RequestInit = {}) => {
+    calls.push({ url: String(url), opts });
     const html = calls.length === 1 ? firstHtml : secondHtml;
     return { ok: true, status: 200, statusText: 'OK', text: async () => html };
-  };
+  }) as unknown as typeof fetch;
 
   const data = await search('DuckDuckGo', {
     maxPages: 5,
@@ -587,14 +586,14 @@ test('search walks fixtures across pagination', async () => {
     time: '',
     fetchImpl,
     delay: () => Promise.resolve(),
-    stderr: { isTTY: false, write() {} },
+    stderr: mockStderr(),
   });
 
   const expectedResults = parsePage(firstHtml).results.length;
   assert.equal(data.pagesScraped, 2);
   assert.equal(data.results.length, expectedResults);
   assert.equal(calls[0].url.includes('DuckDuckGo'), true);
-  assert.equal(calls[0].opts.headers['User-Agent'], USER_AGENT);
+  assert.equal((calls[0].opts.headers as Record<string, string>)['User-Agent'], USER_AGENT);
   assert.equal(calls[1].url, BASE_URL);
   assert.equal(calls[1].opts.method, 'POST');
   assert.equal(String(calls[1].opts.body).includes('s=10'), true);
@@ -603,13 +602,16 @@ test('search walks fixtures across pagination', async () => {
 test('main writes output using injected search', async () => {
   const stdout = {
     buffer: '',
-    write(chunk) {
+    write(chunk: string) {
       this.buffer += chunk;
+      return true;
     },
   };
-  const searchImpl = async (query) => ({
+  const searchImpl = async (query: string): Promise<SearchResponse> => ({
     query,
     pagesScraped: 1,
+    spelling: null,
+    zeroClick: null,
     results: [
       {
         title: 'Single',
@@ -623,7 +625,7 @@ test('main writes output using injected search', async () => {
   await main(['-f', 'compact', 'single'], {
     searchImpl,
     stdout,
-    exit: (code) => {
+    exit: (code: number) => {
       throw new Error(`exit ${code}`);
     },
   });
@@ -634,14 +636,16 @@ test('main renders each format path', async () => {
   const formats = ['json', 'jsonl', 'csv', 'opensearch', 'markdown'];
   const stdout = {
     buffer: '',
-    write(chunk) {
+    write(chunk: string) {
       this.buffer += chunk;
+      return true;
     },
   };
-  const searchImpl = async (query) => ({
+  const searchImpl = async (query: string): Promise<SearchResponse> => ({
     query,
     pagesScraped: 1,
     spelling: null,
+    zeroClick: null,
     results: [{ title: 'A', url: 'https://a.test', description: 'Alpha', displayUrl: 'a.test' }],
   });
 
@@ -650,7 +654,7 @@ test('main renders each format path', async () => {
     await main(['-f', format, 'demo'], {
       searchImpl,
       stdout,
-      exit: (code) => {
+      exit: (code: number) => {
         throw new Error(`exit ${code}`);
       },
     });
@@ -659,39 +663,51 @@ test('main renders each format path', async () => {
 });
 
 test('main passes maxResults to search', async () => {
-  let capturedOpts;
-  const searchImpl = async (query, opts) => {
+  let capturedOpts: SearchOptions | undefined;
+  const searchImpl = async (query: string, opts: SearchOptions): Promise<SearchResponse> => {
     capturedOpts = opts;
     return {
       query,
       pagesScraped: 1,
-      results: [
-        { title: 'A', url: 'https://a.test', description: 'Alpha', displayUrl: 'a.test' },
-      ],
+      spelling: null,
+      zeroClick: null,
+      results: [{ title: 'A', url: 'https://a.test', description: 'Alpha', displayUrl: 'a.test' }],
     };
   };
-  const stdout = { buffer: '', write(chunk) { this.buffer += chunk; } };
+  const stdout = {
+    buffer: '',
+    write(chunk: string) {
+      this.buffer += chunk;
+      return true;
+    },
+  };
 
   await main(['-n', '3', 'demo'], {
     searchImpl,
     stdout,
-    exit: (code) => { throw new Error(`exit ${code}`); },
+    exit: (code: number) => {
+      throw new Error(`exit ${code}`);
+    },
   });
 
-  assert.equal(capturedOpts.maxResults, 3);
+  assert.equal(capturedOpts!.maxResults, 3);
 });
 
 test('main exits when search fails', async () => {
-  const stdout = { write() {} };
-  const exitCalls = [];
-  const exitFn = (code) => {
+  const stdout = {
+    write() {
+      return true;
+    },
+  };
+  const exitCalls: number[] = [];
+  const exitFn = (code: number): void => {
     exitCalls.push(code);
     throw new Error(`exit ${code}`);
   };
   await assert.rejects(
     () =>
       main(['-f', 'json', 'demo'], {
-        searchImpl: async () => {
+        searchImpl: async (): Promise<SearchResponse> => {
           throw new Error('boom');
         },
         stdout,
@@ -710,11 +726,11 @@ test('BASE_URL and USER_AGENT are exported', () => {
 test('randomDelay resolves using timers', async () => {
   const original = globalThis.setTimeout;
   let scheduled = 0;
-  globalThis.setTimeout = (fn) => {
+  globalThis.setTimeout = ((fn: () => void) => {
     scheduled += 1;
     fn();
     return 0;
-  };
+  }) as unknown as typeof globalThis.setTimeout;
   try {
     await randomDelay();
     assert.equal(scheduled > 0, true);
@@ -725,28 +741,28 @@ test('randomDelay resolves using timers', async () => {
 
 test('fetchPage passes signal to fetch', async () => {
   const controller = new AbortController();
-  let capturedOpts;
-  const fetchImpl = async (url, opts) => {
+  let capturedOpts: RequestInit | undefined;
+  const fetchImpl = (async (_url: string | URL | Request, opts?: RequestInit) => {
     capturedOpts = opts;
     return { ok: true, status: 200, statusText: 'OK', text: async () => 'html' };
-  };
+  }) as unknown as typeof fetch;
   await fetchPage('https://example.com', null, fetchImpl, controller.signal);
-  assert.equal(capturedOpts.signal, controller.signal);
+  assert.equal(capturedOpts!.signal, controller.signal);
 });
 
 test('fetchPage omits signal when not provided', async () => {
-  let capturedOpts;
-  const fetchImpl = async (url, opts) => {
+  let capturedOpts: RequestInit | undefined;
+  const fetchImpl = (async (_url: string | URL | Request, opts?: RequestInit) => {
     capturedOpts = opts;
     return { ok: true, status: 200, statusText: 'OK', text: async () => 'html' };
-  };
+  }) as unknown as typeof fetch;
   await fetchPage('https://example.com', null, fetchImpl);
-  assert.equal(capturedOpts.signal, undefined);
+  assert.equal(capturedOpts!.signal, undefined);
 });
 
 test('search passes signal through to fetchPage', async () => {
   const controller = new AbortController();
-  const capturedSignals = [];
+  const capturedSignals: (AbortSignal | undefined)[] = [];
   const html = `
     <div class="result web-result">
       <a class="result__a" href="https://example.com/1">Title 1</a>
@@ -754,10 +770,10 @@ test('search passes signal through to fetchPage', async () => {
       <span class="result__url">example.com/1</span>
     </div>
   `;
-  const fetchImpl = async (url, opts) => {
-    capturedSignals.push(opts.signal);
+  const fetchImpl = (async (_url: string | URL | Request, opts?: RequestInit) => {
+    capturedSignals.push(opts?.signal ?? undefined);
     return { ok: true, status: 200, statusText: 'OK', text: async () => html };
-  };
+  }) as unknown as typeof fetch;
 
   await search('demo', {
     maxPages: 1,
@@ -766,7 +782,7 @@ test('search passes signal through to fetchPage', async () => {
     signal: controller.signal,
     fetchImpl,
     delay: () => Promise.resolve(),
-    stderr: { isTTY: false, write() {} },
+    stderr: mockStderr(),
   });
 
   assert.equal(capturedSignals[0], controller.signal);
@@ -775,13 +791,12 @@ test('search passes signal through to fetchPage', async () => {
 test('search aborts when signal is triggered', async () => {
   const controller = new AbortController();
   let fetchCount = 0;
-  const fetchImpl = async (url, opts) => {
+  const fetchImpl = (async (_url: string | URL | Request, opts?: RequestInit) => {
     fetchCount++;
-    if (opts.signal && opts.signal.aborted) {
+    if (opts?.signal?.aborted) {
       throw new DOMException('The operation was aborted.', 'AbortError');
     }
     if (fetchCount === 1) {
-      // Abort after first fetch completes
       controller.abort();
     }
     return {
@@ -790,7 +805,7 @@ test('search aborts when signal is triggered', async () => {
       statusText: 'OK',
       text: async () => `
         <div class="result web-result">
-          <a class="result__a" href="https://example.com/${fetchCount}">Title ${fetchCount}</a>
+          <a class="result__a" href="https://example.com/${String(fetchCount)}">Title ${String(fetchCount)}</a>
           <div class="result__snippet">Snippet</div>
           <span class="result__url">example.com</span>
         </div>
@@ -802,7 +817,7 @@ test('search aborts when signal is triggered', async () => {
         </div>
       `,
     };
-  };
+  }) as unknown as typeof fetch;
 
   await assert.rejects(
     () =>
@@ -813,18 +828,18 @@ test('search aborts when signal is triggered', async () => {
         signal: controller.signal,
         fetchImpl,
         delay: () => Promise.resolve(),
-        stderr: { isTTY: false, write() {} },
+        stderr: mockStderr(),
       }),
     /aborted/i,
   );
 });
 
 test('fetchPage throws on HTTP errors', async () => {
-  const fetchImpl = async () => ({
+  const fetchImpl = (async () => ({
     ok: false,
     status: 500,
     statusText: 'Boom',
     text: async () => '',
-  });
+  })) as unknown as typeof fetch;
   await assert.rejects(() => fetchPage('https://example.com', null, fetchImpl), /HTTP 500 Boom/);
 });

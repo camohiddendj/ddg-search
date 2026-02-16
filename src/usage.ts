@@ -1,4 +1,8 @@
-export function usage(exitFn = process.exit) {
+import type { ExitFn } from '@/types.js';
+
+const defaultExit: ExitFn = (code) => process.exit(code);
+
+export function usage(exitFn: ExitFn = defaultExit): void {
   const text = `Usage: ddg-search [options] <query>
 
 Search DuckDuckGo and output results in structured formats.
@@ -27,6 +31,7 @@ Examples:
   ddg-search -f opensearch "rust programming" > results.xml
   ddg-search -f compact "api docs" | llm "summarize these results"
   ddg-search -p 0 "scrape everything"
+  ddg-search -n 5 "top results"
   ddg-search -r us-en -t w "recent news"
   ddg-search "rust programming" | jq '.items[].link'`;
   console.error(text);
