@@ -50,11 +50,14 @@ Results are written to stdout; progress is written to stderr.
 ```js
 import { search, formatJson } from 'ddg-search';
 
+const controller = new AbortController();
+
 const { results, spelling, zeroClick } = await search('rust programming', {
   maxPages: 2,
   maxResults: 5, // stop early once 5 results are collected
   region: 'us-en',
   time: 'w',
+  signal: controller.signal, // optional: cancel with controller.abort()
 });
 
 // Convert to OpenSearch-style JSON
