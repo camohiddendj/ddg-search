@@ -12,3 +12,4 @@ tmp/
 CLAUDE.md
 .codex/
 .cursor/
+package-lock.json
