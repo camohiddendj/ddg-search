@@ -15,7 +15,7 @@ DuckDuckGo HTML search scraper with multiple output formats. Provides a CLI and 
 
 ### Postinstall behavior
 
-When you install this package, a postinstall script automatically runs to detect and integrate with [Openclaw](https://github.com/openclaw) if present on your system. The script searches for an existing Openclaw skills directory (e.g., `~/.openclaw/skills`, `./openclaw/skills`) and copies the `SKILL.md` file there, making this tool discoverable to Openclaw.
+When you install this package, a postinstall script automatically runs to detect and integrate with [Openclaw](https://github.com/openclaw) if present on your system. The script searches for an existing Openclaw skills directory (e.g., `~/.openclaw/skills`, `./openclaw/skills`) and copies the `SKILL.md` file there, making this tool discoverable to Openclaw. This behavior is automatically skipped when the package is installed as a dependency in another project.
 
 **This script:**
 
@@ -24,12 +24,16 @@ When you install this package, a postinstall script automatically runs to detect
 - Does not create directories or modify your system if Openclaw is not detected
 - Runs silently and exits gracefully if no Openclaw installation is found
 
-**To skip the postinstall script** (if you don't use Openclaw or want to avoid automatic setup):
+**To skip the postinstall script**, set the `SKIP_POSTINSTALL` environment variable:
+
+```bash
+SKIP_POSTINSTALL=1 npm install -g ddg-search
+```
+
+Alternatively, use the `--ignore-scripts` flag:
 
 ```bash
 npm install ddg-search --ignore-scripts
-# or
-pnpm install ddg-search --ignore-scripts
 ```
 
 Note: Using `--ignore-scripts` prevents all install scripts from running, which is safe for this package since the postinstall script is optional and only affects Openclaw integration.
