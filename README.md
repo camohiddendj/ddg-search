@@ -13,6 +13,22 @@ DuckDuckGo HTML search scraper with multiple output formats. Provides a CLI and 
 - Project dependency: `npm install ddg-search`
 - Local dev from this repo: `pnpm install` then `pnpm link --global` or `pnpm install -g .` (enable via `corepack enable` if needed)
 
+### Postinstall Behavior
+
+When installing globally or in development mode, the package includes a postinstall script that copies the skill definition file (`SKILL.md`) to your Openclaw skills directory if it exists. This behavior is automatically skipped when the package is installed as a dependency in another project.
+
+To manually skip the postinstall script, set the `SKIP_POSTINSTALL` environment variable:
+
+```bash
+SKIP_POSTINSTALL=1 npm install -g ddg-search
+```
+
+Alternatively, use the `--ignore-scripts` flag:
+
+```bash
+npm install -g ddg-search --ignore-scripts
+```
+
 ## CLI usage
 
 ```
