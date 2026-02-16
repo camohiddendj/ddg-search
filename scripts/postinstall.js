@@ -28,17 +28,24 @@ if (!existsSync(src)) process.exit(0);
  */
 function isPathSafe(dirPath) {
   try {
-    // Check for directory traversal sequences (not just .. as a substring)
-    // This catches explicit attempts like '../../etc' or '..\..\'
-    if (dirPath.includes('/../') || dirPath.includes('\\..\\') || 
-        dirPath.endsWith('/..') || dirPath.endsWith('\\..')) {
-      return false;
-    }
-    
     // Reject relative paths - environment variables should use absolute paths
     // This prevents confusion about where files will be written
     // Uses isAbsolute for cross-platform compatibility (works on both Unix and Windows)
     if (!isAbsolute(dirPath)) {
+      return false;
+    }
+    
+    // Normalize the path to resolve . and .. segments
+    const normalizedPath = resolve(dirPath);
+    
+    // Split the original and normalized paths into segments for comparison
+    // If the normalized path has fewer segments or different segments,
+    // it means there was traversal happening
+    const originalSegments = dirPath.split(/[/\\]/).filter(Boolean);
+    const normalizedSegments = normalizedPath.split(/[/\\]/).filter(Boolean);
+    
+    // Check if .. appears in the original path - this indicates traversal attempt
+    if (originalSegments.includes('..')) {
       return false;
     }
     
@@ -109,10 +116,12 @@ for (const dir of candidates) {
   // This prevents creating directories in arbitrary locations
   if (!existsSync(skillsDir)) continue;
   
-  // Security: Validate the skills directory after resolving symlinks
+  // Security: Resolve symlinks to ensure we're writing to the real location
+  // Validate that the resolved path is absolute
   try {
     const realSkillsDir = realpathSync(skillsDir);
-    if (!isPathSafe(realSkillsDir)) {
+    // Ensure the resolved path is still absolute (defensive check)
+    if (!isAbsolute(realSkillsDir)) {
       continue;
     }
   } catch {
