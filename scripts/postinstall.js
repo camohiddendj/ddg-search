@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, copyFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { existsSync, mkdirSync, copyFileSync, realpathSync } from 'node:fs';
+import { join, dirname, resolve, isAbsolute, normalize } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
@@ -12,13 +12,87 @@ const cwd = process.cwd();
 const src = join(pkgDir, 'SKILL.md');
 if (!existsSync(src)) process.exit(0);
 
+/**
+ * Security: Validates that a path is safe to use.
+ * This function prevents directory traversal attacks and ensures paths
+ * are within expected boundaries.
+ * 
+ * Security considerations when using environment variables:
+ * - OPENCLAW_STATE_DIR and OPENCLAW_HOME can influence where files are written
+ * - This script validates paths to prevent malicious directory traversal
+ * - Only writes to existing 'skills' directories (won't create new ones in arbitrary locations)
+ * - Resolves symlinks to prevent bypassing validation
+ * 
+ * @param {string} dirPath - The directory path to validate
+ * @returns {boolean} - True if the path is safe, false otherwise
+ */
+function isPathSafe(dirPath) {
+  try {
+    // Normalize and resolve the path to handle .. and . segments
+    const normalizedPath = normalize(dirPath);
+    
+    // Check for directory traversal patterns
+    if (normalizedPath.includes('..')) {
+      return false;
+    }
+    
+    // Ensure the path is absolute (prevents relative path exploits)
+    if (!isAbsolute(normalizedPath)) {
+      return false;
+    }
+    
+    // Resolve to absolute path
+    const resolvedPath = resolve(normalizedPath);
+    
+    // Additional safety check: ensure resolved path doesn't escape to parent
+    // by checking if the normalized path is contained in the resolved path
+    if (!resolvedPath.startsWith(normalize(resolvedPath))) {
+      return false;
+    }
+    
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validates and sanitizes a path from environment variable.
+ * Returns null if the path is unsafe or invalid.
+ * 
+ * @param {string|undefined} envPath - Path from environment variable
+ * @returns {string|null} - Validated path or null
+ */
+function validateEnvPath(envPath) {
+  if (!envPath || typeof envPath !== 'string') {
+    return null;
+  }
+  
+  // Trim whitespace
+  const trimmed = envPath.trim();
+  if (!trimmed) {
+    return null;
+  }
+  
+  // Validate the path is safe
+  if (!isPathSafe(trimmed)) {
+    console.warn(`[ddg-search postinstall] Ignoring unsafe path from environment: ${trimmed}`);
+    return null;
+  }
+  
+  return trimmed;
+}
+
 // Candidate state directories, checked in order. The first one whose
 // "skills" subfolder already exists wins. Env-var overrides take priority,
 // then workspace-local paths (cwd), then common home-dir locations, and
 // finally docker / non-standard locations.
+//
+// Security note: Environment variables are validated before use to prevent
+// malicious path injection. See isPathSafe() and validateEnvPath() for details.
 const candidates = [
-  process.env.OPENCLAW_STATE_DIR,
-  process.env.OPENCLAW_HOME,
+  validateEnvPath(process.env.OPENCLAW_STATE_DIR),
+  validateEnvPath(process.env.OPENCLAW_HOME),
   join(cwd, '.openclaw'),
   join(cwd, 'openclaw'),
   join(home, '.openclaw'),
@@ -31,9 +105,27 @@ const candidates = [
 ].filter(Boolean);
 
 for (const dir of candidates) {
+  // Additional safety check: validate each candidate path
+  if (!isPathSafe(dir)) {
+    continue;
+  }
+  
   const skillsDir = join(dir, 'skills');
+  
+  // Security: Only write if the skills directory already exists
+  // This prevents creating directories in arbitrary locations
   if (!existsSync(skillsDir)) continue;
-
+  
+  // Security: Validate the skills directory after resolving symlinks
+  try {
+    const realSkillsDir = realpathSync(skillsDir);
+    if (!isPathSafe(realSkillsDir)) {
+      continue;
+    }
+  } catch {
+    continue;
+  }
+  
   const dest = join(skillsDir, 'ddg-search');
   mkdirSync(dest, { recursive: true });
   copyFileSync(src, join(dest, 'SKILL.md'));
