@@ -18,11 +18,12 @@ Usage: ddg-search [options] <query>
 Search DuckDuckGo and output results in structured formats.
 
 Options:
-  -f, --format <fmt>   Output format (default: json). See formats below.
-  -p, --pages <n>      Maximum pages to scrape, 0 for unlimited (default: 5)
-  -r, --region <code>  Region code, e.g. us-en, uk-en (default: all regions)
-  -t, --time <range>   Time filter: d (day), w (week), m (month), y (year)
-  -h, --help           Show this help message
+  -f, --format <fmt>       Output format (default: json). See formats below.
+  -p, --pages <n>          Maximum pages to scrape, 0 for unlimited (default: 5)
+  -n, --max-results <n>    Maximum number of results to return
+  -r, --region <code>      Region code, e.g. us-en, uk-en (default: all regions)
+  -t, --time <range>       Time filter: d (day), w (week), m (month), y (year)
+  -h, --help               Show this help message
 
 Formats:
   json        OpenSearch 1.1 response conventions in JSON
@@ -41,6 +42,7 @@ Results are written to stdout; progress is written to stderr.
 - `ddg-search -f opensearch "rust programming" > results.xml`
 - `ddg-search -f compact "api docs" | llm "summarize these results"`
 - `ddg-search -p 0 "scrape everything"`
+- `ddg-search -n 5 "top results"`
 - `ddg-search -r us-en -t w "recent news"`
 - `ddg-search "rust programming" | jq '.items[].link'`
 
@@ -50,6 +52,7 @@ import { search, formatJson } from 'ddg-search';
 
 const { results, spelling, zeroClick } = await search('rust programming', {
   maxPages: 2,
+  maxResults: 5, // stop early once 5 results are collected
   region: 'us-en',
   time: 'w',
 });

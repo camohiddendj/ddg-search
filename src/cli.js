@@ -13,10 +13,10 @@ export async function main(
   argv = process.argv.slice(2),
   { searchImpl = search, stdout = process.stdout, exit = process.exit } = {},
 ) {
-  const { query, maxPages, format, region, time } = parseCliArgs(argv, exit);
+  const { query, maxPages, maxResults, format, region, time } = parseCliArgs(argv, exit);
 
   try {
-    const data = await searchImpl(query, { maxPages, region, time });
+    const data = await searchImpl(query, { maxPages, maxResults, region, time });
 
     let output;
     switch (format) {

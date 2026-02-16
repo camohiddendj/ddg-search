@@ -26,13 +26,22 @@ export function randomDelay() {
 
 export async function search(
   query,
-  { maxPages, region, time, fetchImpl = fetch, delay = randomDelay, stderr = process.stderr },
+  {
+    maxPages,
+    maxResults,
+    region,
+    time,
+    fetchImpl = fetch,
+    delay = randomDelay,
+    stderr = process.stderr,
+  },
 ) {
   const allResults = [];
   let spelling = null;
   let zeroClick = null;
   let page = 0;
   const showProgress = stderr.isTTY;
+  const limit = maxResults != null ? maxResults : Infinity;
 
   const params = new URLSearchParams({ q: query });
   if (region) params.set('kl', region);
@@ -54,7 +63,12 @@ export async function search(
     stderr.write(`\rPage ${page}: ${parsed.results.length} results (${allResults.length} total)`);
   }
 
-  while (parsed.nextPageData && !parsed.noMoreResults && page < maxPages) {
+  while (
+    parsed.nextPageData &&
+    !parsed.noMoreResults &&
+    page < maxPages &&
+    allResults.length < limit
+  ) {
     await delay();
 
     const html = await fetchPage(BASE_URL, parsed.nextPageData, fetchImpl);
@@ -80,5 +94,7 @@ export async function search(
     stderr.write('\n');
   }
 
-  return { results: allResults, spelling, zeroClick, pagesScraped: page, query };
+  const finalResults = allResults.length > limit ? allResults.slice(0, limit) : allResults;
+
+  return { results: finalResults, spelling, zeroClick, pagesScraped: page, query };
 }

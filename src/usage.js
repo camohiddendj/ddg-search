@@ -4,11 +4,12 @@ export function usage(exitFn = process.exit) {
 Search DuckDuckGo and output results in structured formats.
 
 Options:
-  -f, --format <fmt>   Output format (default: json). See formats below.
-  -p, --pages <n>      Maximum pages to scrape, 0 for unlimited (default: 5)
-  -r, --region <code>  Region code, e.g. us-en, uk-en (default: all regions)
-  -t, --time <range>   Time filter: d (day), w (week), m (month), y (year)
-  -h, --help           Show this help message
+  -f, --format <fmt>       Output format (default: json). See formats below.
+  -p, --pages <n>          Maximum pages to scrape, 0 for unlimited (default: 5)
+  -n, --max-results <n>    Maximum number of results to return
+  -r, --region <code>      Region code, e.g. us-en, uk-en (default: all regions)
+  -t, --time <range>       Time filter: d (day), w (week), m (month), y (year)
+  -h, --help               Show this help message
 
 Formats:
   json        OpenSearch 1.1 response conventions in JSON
