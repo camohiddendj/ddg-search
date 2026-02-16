@@ -13,6 +13,27 @@ DuckDuckGo HTML search scraper with multiple output formats. Provides a CLI and 
 - Project dependency: `npm install ddg-search`
 - Local dev from this repo: `pnpm install` then `pnpm link --global` or `pnpm install -g .` (enable via `corepack enable` if needed)
 
+### Postinstall behavior
+
+When you install this package, a postinstall script automatically runs to detect and integrate with [Openclaw](https://github.com/openclaw) if present on your system. The script searches for an existing Openclaw skills directory (e.g., `~/.openclaw/skills`, `./openclaw/skills`) and copies the `SKILL.md` file there, making this tool discoverable to Openclaw.
+
+**This script:**
+
+- Only runs if `SKILL.md` exists in the package
+- Only copies files if an Openclaw skills directory is found
+- Does not create directories or modify your system if Openclaw is not detected
+- Runs silently and exits gracefully if no Openclaw installation is found
+
+**To skip the postinstall script** (if you don't use Openclaw or want to avoid automatic setup):
+
+```bash
+npm install ddg-search --ignore-scripts
+# or
+pnpm install ddg-search --ignore-scripts
+```
+
+Note: Using `--ignore-scripts` prevents all install scripts from running, which is safe for this package since the postinstall script is optional and only affects Openclaw integration.
+
 ## CLI usage
 
 ```
